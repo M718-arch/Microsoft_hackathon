@@ -32,19 +32,33 @@ NUM_SENTIMENTS = len(SENTIMENTS)
 
 # ── Model (copy of train.py) ──────────────────────────────────────────────────
 
+def normalize_star_rating(raw_rating):
+    """Must match train.py exactly — same normalization used at training time."""
+    if raw_rating is None or (isinstance(raw_rating, float) and pd.isna(raw_rating)):
+        return 0.0
+    try:
+        r = float(raw_rating)
+    except (TypeError, ValueError):
+        return 0.0
+    return (r - 3.0) / 2.0
+
+
 class ABSAModel(nn.Module):
     def __init__(self, model_name="xlm-roberta-base", dropout=0.1):
         super().__init__()
         self.encoder = AutoModel.from_pretrained(model_name)
         hidden = self.encoder.config.hidden_size
         self.dropout       = nn.Dropout(dropout)
-        self.aspect_head   = nn.Linear(hidden, NUM_ASPECTS)
-        self.sentiment_head = nn.Linear(hidden, NUM_ASPECTS * NUM_SENTIMENTS)
+        self.aspect_head   = nn.Linear(hidden + 1, NUM_ASPECTS)
+        self.sentiment_head = nn.Linear(hidden + 1, NUM_ASPECTS * NUM_SENTIMENTS)
 
-    def forward(self, input_ids, attention_mask):
+    def forward(self, input_ids, attention_mask, star_rating=None):
         outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
         pooled  = outputs.last_hidden_state[:, 0, :]
         pooled  = self.dropout(pooled)
+        if star_rating is None:
+            star_rating = torch.zeros(pooled.size(0), device=pooled.device)
+        pooled = torch.cat([pooled, star_rating.unsqueeze(-1)], dim=-1)
         asp_logits  = self.aspect_head(pooled)
         sent_logits = self.sentiment_head(pooled).view(-1, NUM_ASPECTS, NUM_SENTIMENTS)
         return asp_logits, sent_logits
@@ -57,6 +71,12 @@ class TestDataset(Dataset):
         self.max_length = max_length
         self.texts      = df["review_text"].astype(str).tolist()
         self.ids        = df["review_id"].tolist()
+        if "star_rating" in df.columns:
+            self.ratings = [normalize_star_rating(r) for r in df["star_rating"].tolist()]
+        else:
+            print("[TestDataset] No 'star_rating' column found — running with "
+                  "the feature fixed at 0.0 (no signal) for all rows.")
+            self.ratings = [0.0] * len(self.texts)
 
     def __len__(self):
         return len(self.texts)
@@ -70,9 +90,10 @@ class TestDataset(Dataset):
             return_tensors="pt",
         )
         return {
-            "review_id":     self.ids[idx],
-            "input_ids":     enc["input_ids"].squeeze(0),
+            "review_id":      self.ids[idx],
+            "input_ids":      enc["input_ids"].squeeze(0),
             "attention_mask": enc["attention_mask"].squeeze(0),
+            "star_rating":    torch.tensor(self.ratings[idx], dtype=torch.float),
         }
 
 # ── Prediction ────────────────────────────────────────────────────────────────
@@ -107,8 +128,9 @@ def predict(args):
             review_ids     = batch["review_id"]
             input_ids      = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
+            star_rating    = batch["star_rating"].to(device)
 
-            asp_logits, sent_logits = model(input_ids, attention_mask)
+            asp_logits, sent_logits = model(input_ids, attention_mask, star_rating)
             asp_probs  = torch.sigmoid(asp_logits).cpu().numpy()   # (B, A)
             sent_preds = sent_logits.argmax(-1).cpu().numpy()       # (B, A)
 

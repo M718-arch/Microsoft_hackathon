@@ -143,13 +143,17 @@ if TRANSFORMERS_AVAILABLE:
             self.num_aspects = num_aspects
             self.num_sentiments = num_sentiments
             self.dropout = nn.Dropout(dropout)
-            self.aspect_head = nn.Linear(hidden_size, num_aspects)
-            self.sentiment_head = nn.Linear(hidden_size, num_aspects * num_sentiments)
+            # +1 input dim for the normalized star_rating feature (0.0 = no rating given)
+            self.aspect_head = nn.Linear(hidden_size + 1, num_aspects)
+            self.sentiment_head = nn.Linear(hidden_size + 1, num_aspects * num_sentiments)
         
-        def forward(self, input_ids, attention_mask):
+        def forward(self, input_ids, attention_mask, star_rating=None):
             outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
             pooled = outputs.last_hidden_state[:, 0, :]
             pooled = self.dropout(pooled)
+            if star_rating is None:
+                star_rating = torch.zeros(pooled.size(0), device=pooled.device)
+            pooled = torch.cat([pooled, star_rating.unsqueeze(-1)], dim=-1)
             aspect_logits = self.aspect_head(pooled)
             sentiment_logits = self.sentiment_head(pooled).view(-1, self.num_aspects, self.num_sentiments)
             return aspect_logits, sentiment_logits
@@ -178,7 +182,7 @@ class DemoModel:
         
         self.intensifiers = ["اوي", "قوي", "جداً", "جدا", "كتير", "gedan", "awi"]
     
-    def predict(self, text, threshold=0.5):
+    def predict(self, text, threshold=0.5, star_rating=None):
         text_lower = text.lower()
         detected_aspects = []
         aspect_sentiments = {}
@@ -194,6 +198,16 @@ class DemoModel:
                         for sw in sent_words:
                             if sw in text_lower:
                                 scores[sentiment] += intensity
+
+                    # Fold the star rating in as one more vote, same weight as
+                    # a single keyword hit, so it nudges rather than overrides.
+                    if star_rating is not None:
+                        if star_rating >= 4:
+                            scores["positive"] += 1
+                        elif star_rating <= 2:
+                            scores["negative"] += 1
+                        else:
+                            scores["neutral"] += 1
                     
                     sentiment = max(scores, key=scores.get)
                     if scores[sentiment] == 0:
@@ -204,14 +218,18 @@ class DemoModel:
         
         if not detected_aspects:
             detected_aspects = ["general"]
-            aspect_sentiments["general"] = "neutral"
+            if star_rating is not None and star_rating != 3:
+                aspect_sentiments["general"] = "positive" if star_rating >= 4 else "negative"
+            else:
+                aspect_sentiments["general"] = "neutral"
         
         return {"aspects": detected_aspects, "aspect_sentiments": aspect_sentiments}
     
-    def predict_batch(self, texts, threshold=0.5):
+    def predict_batch(self, texts, threshold=0.5, star_ratings=None):
         results = []
         for i, text in enumerate(texts):
-            pred = self.predict(text, threshold)
+            rating = star_ratings[i] if star_ratings is not None else None
+            pred = self.predict(text, threshold, rating)
             results.append({
                 "review_id": i,
                 "aspects": pred["aspects"],
@@ -292,12 +310,24 @@ def load_trained_model(uploaded_file):
 # ============================================
 # PREDICTION FUNCTIONS
 # ============================================
-def predict_with_trained_model(text, model, tokenizer, device, threshold):
+def normalize_star_rating(raw_rating):
+    """Must match train.py's normalization. None/0 means 'no rating given'."""
+    if raw_rating is None:
+        return 0.0
+    try:
+        r = float(raw_rating)
+    except (TypeError, ValueError):
+        return 0.0
+    return (r - 3.0) / 2.0
+
+
+def predict_with_trained_model(text, model, tokenizer, device, threshold, star_rating=None):
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128)
     inputs = {k: v.to(device) for k, v in inputs.items()}
+    rating_tensor = torch.tensor([normalize_star_rating(star_rating)], dtype=torch.float, device=device)
     
     with torch.no_grad():
-        aspect_logits, sentiment_logits = model(inputs['input_ids'], inputs['attention_mask'])
+        aspect_logits, sentiment_logits = model(inputs['input_ids'], inputs['attention_mask'], rating_tensor)
         aspect_probs = torch.sigmoid(aspect_logits).cpu().numpy()[0]
         sentiment_preds = sentiment_logits.argmax(-1).cpu().numpy()[0]
     
@@ -318,8 +348,8 @@ def predict_with_trained_model(text, model, tokenizer, device, threshold):
     
     return {"aspects": detected, "aspect_sentiments": sentiments}
 
-def predict_with_demo_model(text, threshold):
-    return st.session_state.demo_model.predict(text, threshold)
+def predict_with_demo_model(text, threshold, star_rating=None):
+    return st.session_state.demo_model.predict(text, threshold, star_rating)
 
 # ============================================
 # MAIN APP
@@ -411,7 +441,12 @@ def main():
                 st.session_state.review_text = text
         
         review = st.text_area("or type your review:", value=st.session_state.get("review_text", ""), height=100)
-        
+
+        col_rating, _ = st.columns([1, 3])
+        with col_rating:
+            use_rating = st.checkbox("Include a star rating", value=False)
+            star_rating = st.slider("Star rating", 1, 5, 3, disabled=not use_rating) if use_rating else None
+
         if st.button("🔍 Analyze Review", use_container_width=True) and review:
             with st.spinner("Analyzing..."):
                 translated = st.session_state.translator.transliterate(review)
@@ -419,10 +454,10 @@ def main():
                 if st.session_state.model_loaded:
                     result = predict_with_trained_model(
                         review, st.session_state.model, st.session_state.tokenizer,
-                        st.session_state.device, st.session_state.threshold
+                        st.session_state.device, st.session_state.threshold, star_rating
                     )
                 else:
-                    result = predict_with_demo_model(review, st.session_state.threshold)
+                    result = predict_with_demo_model(review, st.session_state.threshold, star_rating)
                 
                 if translated != review:
                     st.info(f"🔄 {translated}")
@@ -470,20 +505,30 @@ def main():
                     text_col = df.columns[0]
                 
                 st.info(f"📝 Using column: {text_col}")
+
+                has_ratings = "star_rating" in df.columns
+                if has_ratings:
+                    st.info("⭐ Found a 'star_rating' column — will use it to inform sentiment.")
                 
                 if st.button("🚀 Run Batch Prediction", use_container_width=True):
                     with st.spinner(f"Processing {len(df)} reviews..."):
                         texts = df[text_col].fillna("").astype(str).tolist()
+                        ratings = (
+                            pd.to_numeric(df["star_rating"], errors="coerce").tolist()
+                            if has_ratings else [None] * len(texts)
+                        )
                         results = []
                         
                         for i, text in enumerate(texts):
+                            rating = ratings[i]
+                            rating = None if (rating is None or pd.isna(rating)) else int(rating)
                             if st.session_state.model_loaded:
                                 pred = predict_with_trained_model(
                                     text, st.session_state.model, st.session_state.tokenizer,
-                                    st.session_state.device, st.session_state.threshold
+                                    st.session_state.device, st.session_state.threshold, rating
                                 )
                             else:
-                                pred = predict_with_demo_model(text, st.session_state.threshold)
+                                pred = predict_with_demo_model(text, st.session_state.threshold, rating)
                             
                             results.append({
                                 "review_id": i,

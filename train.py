@@ -49,22 +49,41 @@ def set_seed(seed=42):
 
 # ── Dataset ───────────────────────────────────────────────────────────────────
 
+def normalize_star_rating(raw_rating):
+    """
+    Map a 1-5 star rating to roughly [-1, 1] so it sits on a similar scale to
+    the encoder's hidden activations. Missing/unparseable ratings map to 0.0
+    (i.e. "no signal"), not to a fake neutral rating of 3 — that distinction
+    matters so the model can learn to rely on it only when it's present.
+    """
+    if raw_rating is None or (isinstance(raw_rating, float) and np.isnan(raw_rating)):
+        return 0.0
+    try:
+        r = float(raw_rating)
+    except (TypeError, ValueError):
+        return 0.0
+    return (r - 3.0) / 2.0  # 1★→-1.0, 3★→0.0, 5★→1.0
+
+
 class ABSADataset(Dataset):
     """
     Each item returns:
       input_ids, attention_mask
       aspect_labels:    (NUM_ASPECTS,)         float — 1 if aspect present
       sentiment_labels: (NUM_ASPECTS,)         long  — sentiment index per aspect (-1 = not present)
+      star_rating:      scalar float           normalized star rating, 0.0 if unavailable
     """
     def __init__(self, df, tokenizer, max_length=128):
         self.tokenizer  = tokenizer
         self.max_length = max_length
         self.records    = []
+        self.has_ratings = "star_rating" in df.columns
 
         for _, row in df.iterrows():
             text    = str(row["review_text"])
             aspects = json.loads(row["aspects"])
             sents   = json.loads(row["aspect_sentiments"])
+            rating  = normalize_star_rating(row.get("star_rating"))
 
             aspect_labels    = np.zeros(NUM_ASPECTS, dtype=np.float32)
             sentiment_labels = np.full(NUM_ASPECTS, -1, dtype=np.int64)  # -1 = absent
@@ -80,7 +99,12 @@ class ABSADataset(Dataset):
                 "text":             text,
                 "aspect_labels":    aspect_labels,
                 "sentiment_labels": sentiment_labels,
+                "star_rating":      rating,
             })
+
+        if not self.has_ratings:
+            print("  [ABSADataset] No 'star_rating' column found — model will "
+                  "train with the feature fixed at 0.0 (no signal) for this split.")
 
     def __len__(self):
         return len(self.records)
@@ -99,6 +123,7 @@ class ABSADataset(Dataset):
             "attention_mask":   enc["attention_mask"].squeeze(0),
             "aspect_labels":    torch.tensor(rec["aspect_labels"],    dtype=torch.float),
             "sentiment_labels": torch.tensor(rec["sentiment_labels"], dtype=torch.long),
+            "star_rating":      torch.tensor(rec["star_rating"],      dtype=torch.float),
         }
 
 # ── Model ─────────────────────────────────────────────────────────────────────
@@ -106,8 +131,10 @@ class ABSADataset(Dataset):
 class ABSAModel(nn.Module):
     """
     XLM-RoBERTa encoder with two classification heads:
-      - aspect_head:    Linear(hidden, NUM_ASPECTS)       → binary sigmoid per aspect
-      - sentiment_head: Linear(hidden, NUM_ASPECTS * 3)   → softmax per aspect
+      - aspect_head:    Linear(hidden+1, NUM_ASPECTS)       → binary sigmoid per aspect
+      - sentiment_head: Linear(hidden+1, NUM_ASPECTS * 3)   → softmax per aspect
+    The "+1" is a normalized star_rating scalar concatenated onto the pooled
+    [CLS] embedding — 0.0 when no rating is available for a given example.
     """
     def __init__(self, model_name="xlm-roberta-base", dropout=0.1):
         super().__init__()
@@ -117,15 +144,19 @@ class ABSAModel(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         # Aspect detection head
-        self.aspect_head = nn.Linear(hidden, NUM_ASPECTS)
+        self.aspect_head = nn.Linear(hidden + 1, NUM_ASPECTS)
 
         # Sentiment head — outputs NUM_ASPECTS × NUM_SENTIMENTS logits
-        self.sentiment_head = nn.Linear(hidden, NUM_ASPECTS * NUM_SENTIMENTS)
+        self.sentiment_head = nn.Linear(hidden + 1, NUM_ASPECTS * NUM_SENTIMENTS)
 
-    def forward(self, input_ids, attention_mask):
+    def forward(self, input_ids, attention_mask, star_rating=None):
         outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
         pooled  = outputs.last_hidden_state[:, 0, :]   # [CLS] token
         pooled  = self.dropout(pooled)
+
+        if star_rating is None:
+            star_rating = torch.zeros(pooled.size(0), device=pooled.device)
+        pooled = torch.cat([pooled, star_rating.unsqueeze(-1)], dim=-1)  # (B, hidden+1)
 
         aspect_logits    = self.aspect_head(pooled)                              # (B, A)
         sentiment_logits = self.sentiment_head(pooled).view(-1, NUM_ASPECTS, NUM_SENTIMENTS)  # (B, A, 3)
@@ -177,10 +208,11 @@ def evaluate(model, loader, device, threshold=0.5):
         for batch in loader:
             input_ids      = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
+            star_rating    = batch["star_rating"].to(device)
             aspect_labels  = batch["aspect_labels"].numpy()
             sent_labels    = batch["sentiment_labels"].numpy()
 
-            asp_logits, sent_logits = model(input_ids, attention_mask)
+            asp_logits, sent_logits = model(input_ids, attention_mask, star_rating)
             asp_probs  = torch.sigmoid(asp_logits).cpu().numpy()      # (B, A)
             sent_preds = sent_logits.argmax(-1).cpu().numpy()          # (B, A)
 
@@ -266,11 +298,12 @@ def train(args):
         for batch in tqdm(train_loader, desc=f"Epoch {epoch}/{args.epochs}"):
             input_ids      = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
+            star_rating    = batch["star_rating"].to(device)
             aspect_labels  = batch["aspect_labels"].to(device)
             sent_labels    = batch["sentiment_labels"].to(device)
 
             optimizer.zero_grad()
-            asp_logits, sent_logits = model(input_ids, attention_mask)
+            asp_logits, sent_logits = model(input_ids, attention_mask, star_rating)
             loss = compute_loss(asp_logits, sent_logits, aspect_labels, sent_labels)
             loss.backward()
 
