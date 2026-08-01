@@ -1,0 +1,129 @@
+﻿.results-overview {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #EAD9BE;
+}
+
+.results-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2F2F2F;
+  margin-bottom: 12px;
+}
+
+.results-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.result-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #EAD9BE;
+  transition: all 0.2s ease;
+}
+
+.result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.result-card.positive {
+  border-left: 4px solid #4CAF50;
+}
+
+.result-card.neutral {
+  border-left: 4px solid #FBBF24;
+}
+
+.result-card.negative {
+  border-left: 4px solid #EF4444;
+}
+
+.result-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.result-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-label {
+  font-size: 0.65rem;
+  color: #8A7F72;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.result-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2F2F2F;
+  line-height: 1.2;
+}
+
+/* Category Card (appears in results) */
+.category-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 14px;
+  border-radius: 50px;
+  background: white;
+  border: 1px solid #EAD9BE;
+  margin-top: 12px;
+}
+
+.category-icon {
+  font-size: 16px;
+}
+
+.category-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  color: #2F2F2F;
+}
+
+.category-sentiment {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 12px;
+  border-radius: 12px;
+  text-transform: capitalize;
+}
+
+.category-sentiment.positive {
+  color: #4CAF50;
+  background: rgba(76, 175, 80, 0.08);
+}
+
+.category-sentiment.negative {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.category-sentiment.neutral {
+  color: #FBBF24;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+@media (max-width: 768px) {
+  .results-cards {
+    grid-template-columns: 1fr;
+  }
+}

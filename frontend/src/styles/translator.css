@@ -1,0 +1,330 @@
+/* ============================================================
+   TRANSLATOR - MODERN REDESIGN (CLEANED)
+   ============================================================ */
+
+.translator-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 0;
+  flex: 1;
+}
+
+/* ============================================================
+   HEADER - CLEAN TITLE ONLY
+   ============================================================ */
+
+.translator-header-modern {
+  display: flex;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F0E8DD;
+}
+
+.translator-title-modern {
+  font-size: 17px;
+  font-weight: 700;
+  color: #2F2F2F;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.translator-subtitle-modern {
+  font-size: 12px;
+  color: #8A7F72;
+  font-weight: 400;
+  margin: 2px 0 0;
+}
+
+/* ============================================================
+   TRANSLATION PANELS
+   ============================================================ */
+
+.translator-panels {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  align-items: stretch;
+  position: relative;
+}
+
+.translator-panel {
+  background: #FFFDF8;
+  border: 1.5px solid #E8E0D6;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease;
+  min-height: 120px;
+}
+
+.translator-panel:focus-within {
+  border-color: #F97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.06);
+}
+
+.translator-panel.input-panel {
+  border-radius: 12px 0 0 12px;
+  border-right: none;
+}
+
+.translator-panel.output-panel {
+  border-radius: 0 12px 12px 0;
+  border-left: none;
+  background: #F8F4F0;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8A7F72;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.panel-count {
+  font-size: 10px;
+  color: #B5A991;
+}
+
+.panel-textarea {
+  width: 100%;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  color: #2F2F2F;
+  resize: none;
+  flex: 1;
+  outline: none;
+  line-height: 1.6;
+}
+
+.panel-textarea::placeholder {
+  color: #B5A991;
+}
+
+.panel-output {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  padding: 4px 0;
+}
+
+.output-text {
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: #2F2F2F;
+  line-height: 1.6;
+  word-wrap: break-word;
+  direction: rtl;
+  text-align: right;
+  width: 100%;
+}
+
+.output-placeholder {
+  font-size: 14px;
+  color: #B5A991;
+  font-style: italic;
+}
+
+.copy-btn-modern {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #8A7F72;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.copy-btn-modern:hover {
+  background: #F0E8DD;
+  color: #2F2F2F;
+}
+
+.copy-btn-modern.copied {
+  color: #22C55E;
+}
+
+/* ============================================================
+   SWAP ICON
+   ============================================================ */
+
+.translator-swap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+.swap-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #FFFDF8;
+  border: 1.5px solid #E8E0D6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8A7F72;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.swap-circle:hover {
+  border-color: #F97316;
+  color: #F97316;
+  background: #FFF8EC;
+}
+
+/* ============================================================
+   TRANSLATE BUTTON
+   ============================================================ */
+
+.translator-actions {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.translate-btn-modern {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 32px;
+  background: linear-gradient(135deg, #F97316, #EA580C);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.2);
+}
+
+.translate-btn-modern:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.3);
+}
+
+.translate-btn-modern:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.translate-btn-modern:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
+}
+
+/* ============================================================
+   SPINNER
+   ============================================================ */
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .translator-panels {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .translator-panel.input-panel {
+    border-radius: 12px;
+    border-right: 1.5px solid #E8E0D6;
+  }
+
+  .translator-panel.output-panel {
+    border-radius: 12px;
+    border-left: 1.5px solid #E8E0D6;
+  }
+
+  .translator-swap {
+    padding: 4px 0;
+  }
+
+  .swap-circle {
+    transform: rotate(90deg);
+  }
+
+  .translator-header-modern {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .output-text {
+    font-size: 16px;
+  }
+
+  .translate-btn-modern {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .translator-title-modern {
+    font-size: 15px;
+  }
+
+  .translator-subtitle-modern {
+    font-size: 11px;
+  }
+
+  .panel-textarea {
+    font-size: 13px;
+  }
+
+  .output-text {
+    font-size: 14px;
+  }
+
+  .swap-circle {
+    width: 30px;
+    height: 30px;
+  }
+
+  .swap-circle svg {
+    width: 14px;
+    height: 14px;
+  }
+}

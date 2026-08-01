@@ -1,0 +1,188 @@
+﻿.satisfaction-gauge {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.gauge-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2F2F2F;
+  margin-bottom: 16px;
+}
+
+.gauge-wrapper {
+  position: relative;
+}
+
+.gauge {
+  position: relative;
+  width: 220px;
+  height: 130px;
+  margin: 0 auto;
+}
+
+.segment {
+  position: absolute;
+  width: 220px;
+  height: 110px;
+  border-radius: 110px 110px 0 0;
+  clip-path: polygon(0 100%, 0 0, 100% 0, 100% 100%);
+}
+
+.segment.red {
+  background: conic-gradient(from 180deg at 50% 100%, #EF4444 0deg 60deg, transparent 60deg);
+}
+
+.segment.yellow {
+  background: conic-gradient(from 180deg at 50% 100%, transparent 0deg 60deg, #FBBF24 60deg 120deg, transparent 120deg);
+}
+
+.segment.green {
+  background: conic-gradient(from 180deg at 50% 100%, transparent 0deg 120deg, #4CAF50 120deg 180deg);
+}
+
+.hub {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 110px;
+}
+
+.needle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  height: 90px;
+  background: #2F2F2F;
+  transform-origin: bottom center;
+  transition: transform 0.4s ease;
+}
+
+.pivot {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2F2F2F;
+}
+
+.face-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.eye {
+  fill: none;
+  stroke-width: 4;
+}
+
+.mouth {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.score {
+  position: absolute;
+  bottom: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.gauge-status {
+  margin-top: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.status-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.status-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.status-label.poor {
+  background: #FEE2E2;
+  color: #EF4444;
+}
+
+.status-label.average {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.status-label.excellent {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+
+.gauge-progress {
+  width: 200px;
+  height: 6px;
+  border-radius: 999px;
+  background: #EAD9BE;
+  margin: 12px auto 0;
+  overflow: hidden;
+}
+
+.gauge-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+@media (max-width: 768px) {
+  .gauge {
+    width: 180px;
+    height: 110px;
+  }
+
+  .segment {
+    width: 180px;
+    height: 90px;
+  }
+
+  .needle {
+    height: 70px;
+  }
+
+  .score {
+    width: 50px;
+    height: 50px;
+    font-size: 0.9rem;
+    bottom: -50px;
+  }
+
+  .gauge-status {
+    margin-top: 60px;
+  }
+
+  .gauge-progress {
+    width: 160px;
+  }
+}

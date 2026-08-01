@@ -1,0 +1,237 @@
+﻿/* ============================================================
+   LAYOUT - FLOATING ANALYZER ON RESTAURANT BACKGROUND
+   ============================================================ */
+
+/* Full page background - Restaurant image */
+.app-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/restaurant.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* Main content - Floating on top */
+.main-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 32px 40px;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Analyzer wrapper */
+.analyzer-wrapper {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Floating analyzer panel */
+.analyzer-panel {
+  width: 39rem;
+  background: rgba(255, 251, 248, 0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 28px 28px 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+/* ============================================================
+   ANALYZER HEADER - NO ICON
+   ============================================================ */
+.analyzer-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(240, 232, 221, 0.5);
+}
+
+.analyzer-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2F2F2F;
+  line-height: 1.2;
+}
+
+.analyzer-subtitle {
+  font-size: 12px;
+  color: #8A7F72;
+  font-weight: 400;
+}
+
+/* ============================================================
+   RESULT SECTION
+   ============================================================ */
+.result-section {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(240, 232, 221, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-details {
+  text-align: center;
+  width: 100%;
+}
+
+.result-label {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2F2F2F;
+  margin-bottom: 2px;
+}
+
+.result-description {
+  font-size: 12px;
+  color: #8A7F72;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+
+
+/* ============================================================
+   PLACEHOLDER
+   ============================================================ */
+.placeholder {
+  text-align: center;
+  padding: 20px;
+  color: #8A7F72;
+  font-size: 14px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1024px) {
+  .analyzer-wrapper {
+    max-width: 420px;
+  }
+  
+  .analyzer-panel {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px 20px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+  
+  .analyzer-wrapper {
+    max-width: 100%;
+  }
+  
+  .analyzer-panel {
+    padding: 20px;
+    gap: 14px;
+    max-height: calc(100vh - 32px);
+    border-radius: 20px;
+  }
+  
+  .analyzer-title {
+    font-size: 16px;
+  }
+  
+  .result-label {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px 16px;
+    padding-top: 32px;
+  }
+  
+  .analyzer-panel {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .result-label {
+    font-size: 16px;
+  }
+  
+  .result-description {
+    font-size: 11px;
+  }
+}
+/* ============================================================
+   MAIN CONTENT - Add left padding for sidebar gap
+   ============================================================ */
+.main-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 32px 40px;
+  padding-left: 96px; /* ✅ Space for collapsed sidebar + gap */
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* When sidebar is open - adjust padding */
+.sidebar.open ~ .main-content {
+  padding-left: 240px; /* ✅ Space for open sidebar + gap */
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 24px 32px;
+    padding-left: 80px;
+  }
+  
+  .sidebar.open ~ .main-content {
+    padding-left: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px 20px;
+    padding-left: 68px;
+  }
+  
+  .sidebar.open ~ .main-content {
+    padding-left: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px 16px;
+    padding-left: 60px;
+  }
+  
+  .sidebar.open ~ .main-content {
+    padding-left: 176px;
+  }
+}
